@@ -53,19 +53,20 @@ def calculate_dj(ticker_df, M2 ):
     ticker_df['DChangingRatio'] = ticker_df['D']/ticker_df['D_prev']
     ticker_df['J'] = M2*ticker_df['K']-(M2-1)*ticker_df['D']
     return ticker_df
-    
+
 def stochastic_oscillator(ticker_df,cycle=12, M1=4, M2= 3):
     ticker_df = calculate_k(ticker_df,cycle,M1)
     ticker_df = calculate_dj(ticker_df, M2)
     return ticker_df
 
-stochastic_oscillator(df)   
+stochastic_oscillator(df)
 kddf = df[['D','K']]
 kddf['Close'] = df1['Close']
 kddf.plot()
 
 plt.figure()
-kddf.plt.plot().show()
+kddf.plot()
+plt.show()
 
 dist=0
 df['flag_buy'] = 0 #buy indicator
@@ -81,12 +82,12 @@ df['flag_sell_diff'] = df['flag_sell'].diff()
 df['flag_sell_diff'] = df['flag_sell_diff'].apply(lambda x: 1 if x ==1 else 0)
 #df['flag_sell_diff'][df['flag_buy_diff']==-1] = 1
 
-count = 0 
+count = 0
 
 df['buy_rolling']= df['flag_buy_diff'].rolling(35).sum()
 df['sell_rolling']= df['flag_sell_diff'].rolling(35).sum()
 df['sell_MA'] = 0
-df.loc[(df['Adj Close']<df['MA'])  ,'sell_MA'] = 1
+df.loc[(df['Close']<df['sell_MA'])  ,'sell_MA'] = 1
 
 df['sell_MA_diff'] = df['sell_MA'].diff()
 #df['sell_MA_diff'] = df['sell_MA_diff'].apply(lambda x: 1 if x ==1 else 0)
@@ -96,7 +97,8 @@ df.loc[(df['sell_rolling']==3) & (df['flag_sell_diff']==1) | (df['sell_MA_diff']
 
 df['flag_trade_diff'] = 0
 
-
+'''
+---- TESTING PURPOSES ONLY ---
 for a in df['flag_trade'].reset_index().index:
     count+= df['flag_trade'].iloc[a]
     if count<0:
@@ -115,4 +117,5 @@ else:
     Yield = ((df['Open'][df['flag_trade_diff']==-1].product())/(df['Open'][df['flag_trade_diff']==1].product())-1)*100
 
 
-Record = df[['Date', 'High', 'Low', 'Open', 'Close', 'Volume','flag_trade','flag_trade_diff','J']][df['flag_trade_diff']!=0]#df.to_csv('data.csv')    
+Record = df[['Date', 'High', 'Low', 'Open', 'Close', 'Volume','flag_trade','flag_trade_diff','J']][df['flag_trade_diff']!=0]#df.to_csv('data.csv')
+'''
