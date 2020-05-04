@@ -1,8 +1,9 @@
 matplotlib
 numpy
 pandas
+pandas-datareader
+xlrd
 scipy
 scikit-learn
 tensorflow
-tensorflow-gpu
 pyomo
