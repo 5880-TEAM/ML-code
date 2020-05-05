@@ -1,3 +1,5 @@
+from RNN_Estimator import *
+
 import pandas as pd
 import datetime
 import numpy as np
@@ -59,6 +61,8 @@ def stochastic_oscillator(ticker_df,cycle=12, M1=4, M2= 3):
 
 stochastic_oscillator(df)
 
+predictionmodel(df['D'])
+
 # kddf=[]
 # kddf = df.loc[:,['D','K']] 
 # kddf['Close'] = rawdata['Close']
@@ -76,7 +80,7 @@ df['# Inter 10-day'] = df['Intersection'].rolling(10).sum()# number of intersect
 df['Close/MA20']= df['Close']/df['Close'].rolling(20).mean()
 df['Close/MA50']= df['Close']/df['Close'].rolling(50).mean()
 
-#Judgem whether an intersection is a good buying point, if in the following 14 days, the price goes up by at leasr 3%, it is good
+#Judge whether an intersection is a good buying point, if in the following 14 days, the price goes up by at least 3%, it is good
 def buyjudge(ticker_df,cycle=14,gain=0.05):
     ticker_df['Max'] = ticker_df['Close'].rolling(window = cycle).max().shift(-cycle)
     ticker_df['Good?'] =0
