@@ -1,5 +1,4 @@
 from RNN_Estimator import *
-
 import pandas as pd
 import datetime
 import numpy as np
@@ -18,7 +17,7 @@ matplotlib.style.use('ggplot')
 
 #Load ticker data
 stock="AAPL"
-start = datetime.datetime(2010,1,1)
+start = datetime.datetime(2009,10,1)
 end = datetime.datetime(2020,5,31)
 df=web.DataReader(stock, 'yahoo', start, end).drop(columns=['Adj Close'])
 rawdata=web.DataReader(stock, 'yahoo', start, end)
@@ -81,7 +80,7 @@ df['Close/MA20']= df['Close']/df['Close'].rolling(20).mean()
 df['Close/MA50']= df['Close']/df['Close'].rolling(50).mean()
 
 #Judgem whether an intersection is a good buying point, if in the following 14 days, the price goes up by at leasr 3%, it is good
-def buyjudge(ticker_df,cycle=14,gain=0.05):
+def buyjudge(ticker_df,cycle=14,gain=0.04):
     ticker_df['Max'] = ticker_df['Close'].rolling(window = cycle).max().shift(-cycle)
     ticker_df['Good?'] =0
     df.loc[df['Max']>(1+gain)*ticker_df['Close'],'Good?'] = 1
@@ -96,9 +95,9 @@ X=X.loc[:,['# Inter 10-day','Vol/MA10','SP500_ROC','Close_ROC','rsv','K','D','J'
 y=df.loc[df['Intersection']==1]
 y=y.loc[:,'Good?']
 
-
 #labelname = {'ClassificationMethod'}
-method_list=np.array([svm.SVC(),svm.SVC(kernel='rbf', C=4),svm.SVC(kernel='linear', C=5),svm.SVC(kernel='poly', C=5),RandomForestClassifier(oob_score=True, random_state=10)])
+method_list=np.array([svm.SVC(),svm.SVC(kernel='rbf', C=4),svm.SVC(kernel='linear', C=5),
+                      svm.SVC(kernel='poly', C=5),RandomForestClassifier(oob_score=True, random_state=10)])
 ResultTable=DataFrame(columns=['Stock','Method','AvgScores','StdScores'])
 #
 Market_GoodRatio=sum(df['Good?']==1)/len(df['Good?'])
@@ -110,5 +109,5 @@ ResultTable=ResultTable.append({'Stock':stock,'Method':'Intersection Good Buying
 for method in method_list:
     clf = method
     scores = cross_val_score( clf,X, y, cv=5)
-    series={'Stock':stock,'Method':clf,'AvgScores':scores.mean(),'StdScores':scores.std()}
+    series={'Stock':stock,'Method':method,'AvgScores':scores.mean(),'StdScores':scores.std()}
     ResultTable=ResultTable.append(series,ignore_index=True)
