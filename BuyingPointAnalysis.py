@@ -3,6 +3,7 @@ from RNN_Estimator import *
 import pandas as pd
 import datetime
 import numpy as np
+from array import *
 import pandas_datareader.data as web
 from pandas import Series, DataFrame
 import matplotlib.pyplot as plt
@@ -12,6 +13,7 @@ from sklearn import tree
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn import svm
+from sklearn.ensemble import RandomForestClassifier
 matplotlib.style.use('ggplot')
 
 #Load ticker data
@@ -61,8 +63,6 @@ def stochastic_oscillator(ticker_df,cycle=12, M1=4, M2= 3):
 
 stochastic_oscillator(df)
 
-predictionmodel(df['D'])
-
 # kddf=[]
 # kddf = df.loc[:,['D','K']] 
 # kddf['Close'] = rawdata['Close']
@@ -80,7 +80,7 @@ df['# Inter 10-day'] = df['Intersection'].rolling(10).sum()# number of intersect
 df['Close/MA20']= df['Close']/df['Close'].rolling(20).mean()
 df['Close/MA50']= df['Close']/df['Close'].rolling(50).mean()
 
-#Judge whether an intersection is a good buying point, if in the following 14 days, the price goes up by at least 3%, it is good
+#Judgem whether an intersection is a good buying point, if in the following 14 days, the price goes up by at leasr 3%, it is good
 def buyjudge(ticker_df,cycle=14,gain=0.05):
     ticker_df['Max'] = ticker_df['Close'].rolling(window = cycle).max().shift(-cycle)
     ticker_df['Good?'] =0
@@ -96,39 +96,19 @@ X=X.loc[:,['# Inter 10-day','Vol/MA10','SP500_ROC','Close_ROC','rsv','K','D','J'
 y=df.loc[df['Intersection']==1]
 y=y.loc[:,'Good?']
 
-clf = svm.SVC()#kernel='poly', C=2
-scores = cross_val_score( clf,X, y, cv=5)#5-fold cv
-print('SVM, default',scores.mean(),scores.std())
 
-clf = svm.SVC(kernel='rbf', C=5)#kernel='poly', C=2
-scores = cross_val_score( clf,X, y, cv=5)#5-fold cv
-print('SVM, kernel=rbf',scores.mean(),scores.std())
-
-clf = svm.SVC(kernel='linear', C=5)#kernel='poly', C=2
-scores = cross_val_score( clf,X, y, cv=5)#5-fold cv
-print('SVM, kernel=linear',scores.mean(),scores.std())
-
-clf = svm.SVC(kernel='poly', C=5)#kernel='poly', C=2
-scores = cross_val_score( clf,X, y, cv=5)#5-fold cv
-print('SVM, kernel=poly',scores.mean(),scores.std())
-
-
-ResultTable=[]
+#labelname = {'ClassificationMethod'}
+method_list=np.array([svm.SVC(),svm.SVC(kernel='rbf', C=4),svm.SVC(kernel='linear', C=5),svm.SVC(kernel='poly', C=5),RandomForestClassifier(oob_score=True, random_state=10)])
+ResultTable=DataFrame(columns=['Stock','Method','AvgScores','StdScores'])
 #
-General_GoodRatio=sum(df['Good?']==1)/len(df['Good?'])
-print('Overall Good Buying Ratio in market is',General_GoodRatio)
+Market_GoodRatio=sum(df['Good?']==1)/len(df['Good?'])
 Intersection_GoodRatio=sum(y==1)/len(y)
-print('Good Buying Ratio of Intersections is',Intersection_GoodRatio)
+ResultTable=ResultTable.append({'Stock':stock,'Method':'Market Good Buying Ratio','AvgScores':Market_GoodRatio,'StdScores':0},ignore_index=True)
+ResultTable=ResultTable.append({'Stock':stock,'Method':'Intersection Good Buying Ratio','AvgScores':Intersection_GoodRatio,'StdScores':0},ignore_index=True)
 
-
-for method in[svm.SVC(),svm.SVC(kernel='rbf', C=4)]:
+#try different classification methods and compare the accuracy
+for method in method_list:
     clf = method
-    scores = cross_val_score( clf,X, y, cv=5)#5-fold cv
-    
-
-print('SVM, default',scores.mean(),scores.std())
-
-clf = svm.SVC(kernel='rbf', C=5)#kernel='poly', C=2
-scores = cross_val_score( clf,X, y, cv=5)#5-fold cv
-print('SVM, kernel=rbf',scores.mean(),scores.std())
-
+    scores = cross_val_score( clf,X, y, cv=5)
+    series={'Stock':stock,'Method':clf,'AvgScores':scores.mean(),'StdScores':scores.std()}
+    ResultTable=ResultTable.append(series,ignore_index=True)
