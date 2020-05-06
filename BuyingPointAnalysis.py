@@ -39,7 +39,23 @@ def stochastic_oscillator(ticker_df,cycle=12, M1=4, M2= 3):
     ticker_df = calculate_k(ticker_df,cycle,M1)
     ticker_df = calculate_dj(ticker_df, M2)
     return ticker_df
+    #Judgem whether an intersection is a good buying point, if in the following 14 days, the price goes up by at leasr 3%, it is good
+def buyjudge(ticker_df,cycle=14,gain=0.03):
+    ticker_df['Max'] = ticker_df['Close'].rolling(window = cycle).max().shift(-cycle)
+    ticker_df['Good?'] =0
+    df.loc[df['Max']>(1+gain)*ticker_df['Close'],'Good?'] = 1
+    return ticker_df
 
+method_list = [{'tree.DecisionTreeClassifier()':tree.DecisionTreeClassifier(),
+                'GaussianNB()':GaussianNB(),
+                'KNeighborsClassifier(n_neighbors=5)':KNeighborsClassifier(n_neighbors=5),
+                'svm.SVC()':svm.SVC(),
+                'svm.SVC(kernel=rbf, C=4)':svm.SVC(kernel='rbf', C=4),
+                'svm.SVC(kernel=linear, C=5)':svm.SVC(kernel='linear', C=5),
+                'svm.SVC(kernel=poly, C=5)':svm.SVC(kernel='poly', C=5),
+                'RandomForestClassifier(oob_score=True, random_state=10)':RandomForestClassifier(oob_score=True, random_state=10), 
+                'XGBClassifier()':XGBClassifier()}]
+method_list=pd.DataFrame(method_list)
 ResultTable=DataFrame(columns=['Stock','Method','AvgScores','StdScores'])
 
 start = datetime.datetime(1995,10,1)
@@ -80,14 +96,7 @@ for stock in stocklist:
     df['Close/MA20']= df['Close']/df['Close'].rolling(20).mean()
     df['Close/MA50']= df['Close']/df['Close'].rolling(50).mean()
     
-    #Judgem whether an intersection is a good buying point, if in the following 14 days, the price goes up by at leasr 3%, it is good
-    def buyjudge(ticker_df,cycle=14,gain=0.03):
-        ticker_df['Max'] = ticker_df['Close'].rolling(window = cycle).max().shift(-cycle)
-        ticker_df['Good?'] =0
-        df.loc[df['Max']>(1+gain)*ticker_df['Close'],'Good?'] = 1
-        return ticker_df
     buyjudge(df)
-    
     #Get rid of rows with NA value
     df.dropna(axis=0, how='any', inplace=True)
     
@@ -101,18 +110,7 @@ for stock in stocklist:
     Intersection_GoodRatio=sum(y==1)/len(y)
     ResultTable=ResultTable.append({'Stock':stock,'Method':'Market Good Buying Ratio','AvgScores':Market_GoodRatio,'StdScores':0},ignore_index=True)
     ResultTable=ResultTable.append({'Stock':stock,'Method':'Intersection Good Buying Ratio','AvgScores':Intersection_GoodRatio,'StdScores':0},ignore_index=True)
-    
-    method_list = [{'tree.DecisionTreeClassifier()':tree.DecisionTreeClassifier(),
-                    'GaussianNB()':GaussianNB(),
-                    'KNeighborsClassifier(n_neighbors=5)':KNeighborsClassifier(n_neighbors=5),
-                    'svm.SVC()':svm.SVC(),
-                    'svm.SVC(kernel=rbf, C=4)':svm.SVC(kernel='rbf', C=4),
-                    'svm.SVC(kernel=linear, C=5)':svm.SVC(kernel='linear', C=5),
-                    'svm.SVC(kernel=poly, C=5)':svm.SVC(kernel='poly', C=5),
-                    'RandomForestClassifier(oob_score=True, random_state=10)':RandomForestClassifier(oob_score=True, random_state=10), 
-                    'XGBClassifier()':XGBClassifier()}]
-    method_list=pd.DataFrame(method_list)
-    
+        
     #try different classification methods and compare the accuracy
     index=0
     for method in method_list.loc[0,:]:
