@@ -62,23 +62,23 @@ def buyjudge(ticker_df,gain=0.024,cycle=10):
     return ticker_df
 
 method_list = [{#'DecisionTree':tree.DecisionTreeClassifier(),
-                'Bayes':GaussianNB(),
+                # 'Bayes':GaussianNB(),
                 #'LogisticRegression':LogisticRegression(),
-                'SVC(C=1)':svm.SVC(probability=True),
-                'SVC(C=1.5)':svm.SVC(C=1.5,probability=True),
-                'SVC(C=2)':svm.SVC(C=2,probability=True),
-                'SVC(linear, C=2)':svm.SVC(kernel='linear',probability=True),
-                'SVC(poly, C=2)':svm.SVC(kernel='poly',probability=True),
-                'RandomForest(random_state=10)':RandomForestClassifier(random_state=10), 
-                'XGBT()':Gxb(),
-                'XGBT(λ=0.8)':Gxb(reg_lambda=0.8),
-                'XGBT(λ=1.2)':Gxb(reg_lambda=1.2),
-                'XGBT(λ=1.4)':Gxb(reg_lambda=1.4),
-                'XGBT(γ=0.2)': Gxb(gamma=0.2),
-                'XGBT(γ=0.3)': Gxb(gamma=0.3),
-                'XGBT(γ=0.4)': Gxb(gamma=0.4),
-                'XGBT(γ=0.5)': Gxb(gamma=0.5),
-                'XGBT(γ=0.55)': Gxb(gamma=0.55),
+                # 'SVC(C=1)':svm.SVC(probability=True),
+                # 'SVC(C=1.5)':svm.SVC(C=1.5,probability=True),
+                # 'SVC(C=2)':svm.SVC(C=2,probability=True),
+                # 'SVC(linear, C=2)':svm.SVC(kernel='linear',probability=True),
+                # 'SVC(poly, C=2)':svm.SVC(kernel='poly',probability=True),
+                # 'RandomForest(random_state=10)':RandomForestClassifier(random_state=10), 
+                # 'XGBT()':Gxb(),
+                # 'XGBT(λ=0.8)':Gxb(reg_lambda=0.8),
+                # 'XGBT(λ=1.2)':Gxb(reg_lambda=1.2),
+                # 'XGBT(λ=1.4)':Gxb(reg_lambda=1.4),
+                # 'XGBT(γ=0.2)': Gxb(gamma=0.2),
+                # 'XGBT(γ=0.3)': Gxb(gamma=0.3),
+                # 'XGBT(γ=0.4)': Gxb(gamma=0.4),
+                # 'XGBT(γ=0.5)': Gxb(gamma=0.5),
+                # 'XGBT(γ=0.55)': Gxb(gamma=0.55),
                 }]#
 method_list=pd.DataFrame(method_list)
 ResultTable=DataFrame(columns=['Stock','Method','AvgScores','StdScores'])
@@ -161,13 +161,33 @@ xtrain=X[:3000]
 ytrain=y[:3000]
 xtest=X[3000:]
 ytest=y[3000:]
-index=0
-for method in method_list.loc[0,:]:
-    nb = method
-    nb.fit(xtrain, ytrain)
-    predicted = nb.predict_proba(xtest)
-    precision, recall, threshold = precision_recall_curve(ytest, predicted[:,1])
-    plot_precision_recall_vs_threshold(precision, recall, threshold)
-    index=index+1
-    plt.show()
-   
+
+ # index=0
+ # for method in method_list.loc[0,:]:
+
+ #    clf = method
+ #    clf.fit(xtrain, ytrain)
+ #    predicted = clf.predict_proba(xtest)
+ #    precision, recall, threshold = precision_recall_curve(ytest, predicted[:,1])
+ #    plot_precision_recall_vs_threshold(precision, recall, threshold)
+ #    index=index+1
+    # plt.show()
+clf = svm.SVC(C=2,probability=True)
+clf.fit(xtrain, ytrain)
+predicted = clf.predict_proba(xtest)    
+
+    # kddf=[]
+    # kddf = df.loc[:,['D','K']] 
+    # kddf['Close'] = rawdata['Close']
+    # kddf.plot()
+    # plt.figure()
+    # kddf.plot()
+    # plt.show()
+dfplot=pd.DataFrame()
+dfplot.loc[:,'Close']=df[3000:]['Close']
+dfplot.loc[:,'GoodProb']=predicted[:,1]
+dfplot.to_csv('plot.csv')
+
+
+
+    
