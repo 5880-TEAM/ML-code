@@ -12,7 +12,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn import linear_model, datasets
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier
-from xgboost import XGBClassifier as Gxb
+from xgboost import XGBClassifier as Xgb
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import precision_recall_curve
@@ -70,15 +70,15 @@ method_list = [{#'DecisionTree':tree.DecisionTreeClassifier(),
                 # 'SVC(linear, C=2)':svm.SVC(kernel='linear',probability=True),
                 # 'SVC(poly, C=2)':svm.SVC(kernel='poly',probability=True),
                 # 'RandomForest(random_state=10)':RandomForestClassifier(random_state=10), 
-                # 'XGBT()':Gxb(),
-                # 'XGBT(λ=0.8)':Gxb(reg_lambda=0.8),
-                # 'XGBT(λ=1.2)':Gxb(reg_lambda=1.2),
-                # 'XGBT(λ=1.4)':Gxb(reg_lambda=1.4),
-                # 'XGBT(γ=0.2)': Gxb(gamma=0.2),
-                # 'XGBT(γ=0.3)': Gxb(gamma=0.3),
-                # 'XGBT(γ=0.4)': Gxb(gamma=0.4),
-                # 'XGBT(γ=0.5)': Gxb(gamma=0.5),
-                # 'XGBT(γ=0.55)': Gxb(gamma=0.55),
+                # 'XGBT()':Xgb(),
+                # 'XGBT(λ=0.8)':Xgb(reg_lambda=0.8),
+                 'XGBT(λ=1.2)':Xgb(reg_lambda=1.2),
+                # 'XGBT(λ=1.4)':Xgb(reg_lambda=1.4),
+                # 'XGBT(γ=0.2)': Xgb(gamma=0.2),
+                # 'XGBT(γ=0.3)': Xgb(gamma=0.3),
+                # 'XGBT(γ=0.4)': Xgb(gamma=0.4),
+                # 'XGBT(γ=0.5)': Xgb(gamma=0.5),
+                # 'XGBT(γ=0.55)': Xgb(gamma=0.55),
                 }]#
 method_list=pd.DataFrame(method_list)
 ResultTable=DataFrame(columns=['Stock','Method','AvgScores','StdScores'])
@@ -169,11 +169,13 @@ for method in method_list.loc[0,:]:
      predicted = clf.predict_proba(xtest)
      precision, recall, threshold = precision_recall_curve(ytest, predicted[:,1])
      plot_precision_recall_vs_threshold(precision, recall, threshold)
+     plt.show()
      index=index+1
-
+     
 #select best method     
-    # plt.show()
-clf = svm.SVC(C=2,probability=True)
+    
+#clf = svm.SVC(C=2,probability=True)
+clf = Xgb(reg_lambda=1.2)
 clf.fit(xtrain, ytrain)
 predicted = clf.predict_proba(xtest)    
 
@@ -181,7 +183,7 @@ predicted = clf.predict_proba(xtest)
 dfplot=pd.DataFrame()
 dfplot.loc[:,'Close']=df[3000:]['Close']
 dfplot.loc[:,'GoodProb']=predicted[:,1]
-for threshold in np.arange(0.55,0.58,0.005):
+for threshold in np.arange(0.6,0.72,0.01):
     dfplot['Good']=0
     dfplot.loc[(dfplot['GoodProb']>threshold),'Good'] = dfplot['Close']
     x=dfplot.index
@@ -192,4 +194,5 @@ for threshold in np.arange(0.55,0.58,0.005):
     plt.ylim([10, 200])
     plt.title(['Threshold=',round(threshold)])
     plt.show()
-#dfplot.to_csv('plot.csv')
+dfplot.to_csv('plot.csv')
+
