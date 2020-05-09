@@ -152,10 +152,10 @@ for stock in stocklist:
     plt.title(stock)
     plt.show()
 
-# # 返回预测标签
+# # return the predicted values
 # print(clf.predict(X[-1:]))
  
-# # 返回预测属于某标签的概率
+# # return the probability of the returned values
 # print(clf.predict_proba(X[-1:]))
 xtrain=X[:3000]
 ytrain=y[:3000]
@@ -177,6 +177,7 @@ clf = svm.SVC(C=2,probability=True)
 clf.fit(xtrain, ytrain)
 predicted = clf.predict_proba(xtest)    
 
+#Visualize the buying point
 dfplot=pd.DataFrame()
 dfplot.loc[:,'Close']=df[3000:]['Close']
 dfplot.loc[:,'GoodProb']=predicted[:,1]
