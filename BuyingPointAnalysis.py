@@ -162,32 +162,33 @@ ytrain=y[:3000]
 xtest=X[3000:]
 ytest=y[3000:]
 
- # index=0
- # for method in method_list.loc[0,:]:
+index=0
+for method in method_list.loc[0,:]:
+     clf = method
+     clf.fit(xtrain, ytrain)
+     predicted = clf.predict_proba(xtest)
+     precision, recall, threshold = precision_recall_curve(ytest, predicted[:,1])
+     plot_precision_recall_vs_threshold(precision, recall, threshold)
+     index=index+1
 
- #    clf = method
- #    clf.fit(xtrain, ytrain)
- #    predicted = clf.predict_proba(xtest)
- #    precision, recall, threshold = precision_recall_curve(ytest, predicted[:,1])
- #    plot_precision_recall_vs_threshold(precision, recall, threshold)
- #    index=index+1
+#select best method     
     # plt.show()
 clf = svm.SVC(C=2,probability=True)
 clf.fit(xtrain, ytrain)
 predicted = clf.predict_proba(xtest)    
 
-    # kddf=[]
-    # kddf = df.loc[:,['D','K']] 
-    # kddf['Close'] = rawdata['Close']
-    # kddf.plot()
-    # plt.figure()
-    # kddf.plot()
-    # plt.show()
 dfplot=pd.DataFrame()
 dfplot.loc[:,'Close']=df[3000:]['Close']
 dfplot.loc[:,'GoodProb']=predicted[:,1]
+for threshold in np.arange(0.55,0.58,0.005):
+    dfplot['Good']=0
+    dfplot.loc[(dfplot['GoodProb']>threshold),'Good'] = dfplot['Close']
+    x=dfplot.index
+    y1=dfplot['Close']
+    y2=dfplot['Good']
+    plt.plot(x, y1,'c')
+    plt.plot(x, y2, 'o', ms=4.5)
+    plt.ylim([10, 200])
+    plt.title(['Threshold=',round(threshold)])
+    plt.show()
 #dfplot.to_csv('plot.csv')
-
-
-
-    
