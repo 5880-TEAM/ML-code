@@ -186,7 +186,7 @@ predicted = clf.predict_proba(xtest)
 dfplot=pd.DataFrame()
 dfplot.loc[:,'Close']=df[3000:]['Close']
 dfplot.loc[:,'GoodProb']=predicted[:,1]
-dfplot.to_csv('plot.csv')
+#dfplot.to_csv('plot.csv')
 
 
 
