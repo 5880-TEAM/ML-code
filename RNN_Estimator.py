@@ -6,7 +6,7 @@ from tensorflow.keras.models import Sequential
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import MinMaxScaler
 
-from matplotlib import pyplot
+import matplotlib.pyplot as plt
 
 class RNN():
     def __init__(self, train_X, train_y, test_X, test_y):
@@ -26,10 +26,10 @@ class RNN():
         history = self.model.fit(self.train_X, self.train_y, epochs=20,
                                  validation_data=(self.test_X, self.test_y),
                                  verbose=2)
-        pyplot.plot(history.history['loss'], label='train error')
-        pyplot.plot(history.history['val_loss'], label='validation error')
-        pyplot.legend()
-        pyplot.show()
+        plt.plot(history.history['loss'], label='train error')
+        plt.plot(history.history['val_loss'], label='validation error')
+        plt.legend()
+        plt.show()
     def forecast(self):
         yhat = self.model.predict(self.test_X)
         return yhat

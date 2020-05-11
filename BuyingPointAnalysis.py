@@ -62,6 +62,7 @@ def stochastic_oscillator(ticker_df,cycle=12, M1=4, M2= 3):
 stochastic_oscillator(df)
 
 predictionmodel(df['D'])
+predictionmodel(df['K'])
 
 # kddf=[]
 # kddf = df.loc[:,['D','K']] 
