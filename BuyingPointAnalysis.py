@@ -58,8 +58,8 @@ def stochastic_oscillator(ticker_df,cycle=12, M1=4, M2= 3):
 #Evenly separeate all days into good buying points and poor buying points
 def buyjudge(ticker_df,gain=0.024,cycle=10):
     ticker_df['Max'] = ticker_df['Close'].rolling(window = cycle).max().shift(-cycle)
-    ticker_df['Good?'] =0
-    df.loc[(df['Max']>(1+gain)*ticker_df['Close']),'Good?'] = 1#& (ticker_df['Min']<*ticker_df['Close'])
+    ticker_df['Good Buy Point?'] =0
+    df.loc[(df['Max']>(1+gain)*ticker_df['Close']),'Good Buy Point?'] = 1#& (ticker_df['Min']<*ticker_df['Close'])
     return ticker_df
 
 method_name = [{
@@ -109,13 +109,13 @@ for stock in stocklist:
     X=df.loc[:,['# Inter 10-day','Intersection','MAVOL200','MAVOL20','MAVOL10','MAVOL5','SP500_ROC','Close_ROC','rsv','K','D','J',
                 'K_ROC','D_ROC','K_diff','D_diff','J_ROC','J_diff','Close/MA10','Close/MA20','Close/MA50',
                 'Close/MA100','Close/MA200',]] 
-    y=df.loc[:,'Good?']
+    y=df.loc[:,'Good Buy Point?']
     # split train and test data
     xtrain=X[:3000]
     ytrain=y[:3000]
     xtest=X[3000:]
     ytest=y[3000:]
-    Market_GoodRatio=sum(df['Good?']==1)/len(df['Good?'])#Good Buying Point Ratio in market is manully set to nearly 0.5 
+    Market_GoodRatio=sum(df['Good Buy Point?']==1)/len(df['Good Buy Point?'])#Good Buying Point Ratio in market is manully set to nearly 0.5 
     ResultTable=ResultTable.append({'Stock':stock,'Method':'Market Good Buying Ratio','AvgScores':Market_GoodRatio,'StdScores':0},ignore_index=True)
     #Compare and Plot the precision rate of each algorithm        
     index=0
