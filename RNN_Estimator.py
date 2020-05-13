@@ -28,6 +28,9 @@ class RNN():
                                  verbose=2)
         plt.plot(history.history['loss'], label='train error')
         plt.plot(history.history['val_loss'], label='validation error')
+        plt.xlabel('Epoch')
+        plt.ylabel('Error')
+        plt.title('RNN Training History')
         plt.legend()
         plt.show()
     def forecast(self):
