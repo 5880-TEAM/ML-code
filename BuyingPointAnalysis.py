@@ -18,14 +18,15 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import precision_recall_curve
 matplotlib.style.use('ggplot')
 
+# Define functions
 def plot_precision_recall_vs_threshold(precisions, recalls, thresholds):
     plt.plot(thresholds, precisions[:-1], "b--", label="Precision")
     plt.plot(thresholds, recalls[:-1], "g-", label="Recall")
     plt.xlabel("Threshold")
     plt.legend(loc="lower left")
-    plt.xlim([0.4, 0.6])
+    plt.xlim([0.5, 0.95])
     plt.ylim([0, 1])
-    plt.title(stock+'/n'+method_list.columns[index])
+    plt.title(stock+'\n'+method_list.columns[index])
 
 #Define Stochastic Osciliator
 def calculate_k(ticker_df,cycle, M1 ):
@@ -61,38 +62,33 @@ def buyjudge(ticker_df,gain=0.024,cycle=10):
     df.loc[(df['Max']>(1+gain)*ticker_df['Close']),'Good?'] = 1#& (ticker_df['Min']<*ticker_df['Close'])
     return ticker_df
 
-method_name = [{#'DecisionTree':tree.DecisionTreeClassifier(),
-                # 'Bayes':GaussianNB(),
-                #'LogisticRegression':LogisticRegression(),
+method_name = [{
+                'Bayes':GaussianNB(var_smoothing=1e-09),
+                'Bayese-2':GaussianNB(var_smoothing=1e-02),
+                'Bayese-1':GaussianNB(var_smoothing=1e-01),
+                'Bayese0.5':GaussianNB(var_smoothing=0.5),
+                'Bayese1':GaussianNB(var_smoothing=1),
+                'Bayese3':GaussianNB(var_smoothing=3),
                 # 'SVC(C=1)':svm.SVC(probability=True),
                 # 'SVC(C=1.5)':svm.SVC(C=1.5,probability=True),
-                # 'SVC(C=2)':svm.SVC(C=2,probability=True),
+                #'SVC(linear, C=1)':svm.SVC(kernel='linear', C=1,probability=True),
                 # 'SVC(linear, C=2)':svm.SVC(kernel='linear',probability=True),
-                 'SVC(poly, C=2)':svm.SVC(kernel='poly',probability=True),
-                # 'RandomForest(random_state=10)':RandomForestClassifier(random_state=10), 
-                 'XGBT()':Xgb(),
-                 'XGBT(λ=0.8)':Xgb(reg_lambda=0.8),
-                'XGBT(λ=1.2)':Xgb(reg_lambda=1.2),
-                'XGBT(λ=1.4)':Xgb(reg_lambda=1.4),
-                'XGBT(γ=0.2)': Xgb(gamma=0.2),
-                'XGBT(γ=0.3)': Xgb(gamma=0.3),
-                'XGBT(γ=0.4)': Xgb(gamma=0.4),
-                'XGBT(γ=0.5)': Xgb(gamma=0.5),
-                 'XGBT(γ=0.55)': Xgb(gamma=0.55)
-                 }]
+                # 'SVC(poly, C=2)':svm.SVC(kernel='poly',probability=True),
+                #'XGBT(λ=1.2)':Xgb(reg_lambda=1.2),#Result of parameter tunning in XGBPara.py
+                #'XGBT(λ=1.4)':Xgb(reg_lambda=1.4,max_depth=150),
+                }]
 method_list=pd.DataFrame(method_name)
 ResultTable=DataFrame(columns=['Stock','Method','AvgScores','StdScores'])
-
 start = datetime.datetime(2005,1,1)
 end = datetime.datetime(2020,5,31)
 df_SP500 = web.DataReader("^GSPC", 'yahoo', start,end)
-
-#Load ticker data   'MSFT','AAPL','AMZN','GOOG','FB','JNJ','V','PG','JPM','UNH','MA','INTC','VZ','HD','T','PFE','MRK','PEP']
-stocklist=['MSFT']
+stocklist=['MSFT'] #Load ticker data'MSFT','AAPL','AMZN','GOOG','FB','JNJ','V','PG','JPM','UNH','MA','INTC','VZ','HD','T','PFE','MRK','PEP']
 for stock in stocklist:
     df=web.DataReader(stock, 'yahoo', start, end).drop(columns=['Adj Close'])
     rawdata=df
-    #Some indicators
+    #Selected indicators
+    df['MAVOL200'] = df['Volume']/df['Volume'].rolling(200).mean()
+    df['MAVOL20'] = df['Volume']/df['Volume'].rolling(20).mean()
     df['MAVOL10'] = df['Volume']/df['Volume'].rolling(10).mean()
     df['MAVOL5'] = df['Volume']/df['Volume'].rolling(5).mean() 
     df['SP500'] = df_SP500['Close']
@@ -110,7 +106,7 @@ for stock in stocklist:
     buyjudge(df)
     df.dropna(axis=0, how='any', inplace=True)#Get rid of rows with NA value
     #Retrive X and y 
-    X=df.loc[:,['# Inter 10-day','Intersection','MAVOL10','MAVOL5','SP500_ROC','Close_ROC','rsv','K','D','J',
+    X=df.loc[:,['# Inter 10-day','Intersection','MAVOL200','MAVOL20','MAVOL10','MAVOL5','SP500_ROC','Close_ROC','rsv','K','D','J',
                 'K_ROC','D_ROC','K_diff','D_diff','J_ROC','J_diff','Close/MA10','Close/MA20','Close/MA50',
                 'Close/MA100','Close/MA200',]] 
     y=df.loc[:,'Good?']
@@ -121,13 +117,12 @@ for stock in stocklist:
     ytest=y[3000:]
     Market_GoodRatio=sum(df['Good?']==1)/len(df['Good?'])#Good Buying Point Ratio in market is manully set to nearly 0.5 
     ResultTable=ResultTable.append({'Stock':stock,'Method':'Market Good Buying Ratio','AvgScores':Market_GoodRatio,'StdScores':0},ignore_index=True)
-        
-    #try different classification methods and compare the accuracy
+    #Compare and Plot the precision rate of each algorithm        
     index=0
     for method in method_list.loc[0,:]:
         clf = method
-        cv=TimeSeriesSplit(n_splits=4)
-        scores = cross_val_score(clf,xtrain, ytrain, cv=cv,scoring='precision')
+        #cv=TimeSeriesSplit(n_splits=3)
+        scores = cross_val_score(clf,xtrain, ytrain, cv=4,scoring='precision')
         print(scores[scores>0])
         series={'Stock':stock,'Method':method_list.columns[index],'AvgScores':scores[scores>0].mean(),'StdScores':scores[scores>0].std()}
         index=index+1
@@ -140,7 +135,7 @@ for stock in stocklist:
     plt.barh(range(len(num_list)), num_list,tick_label = name_list)
     plt.title(stock+'\nPrecision Rate')
     plt.show()
-
+#Plot precission rate 
 index=0
 for method in method_list.loc[0,:]:
      clf = method
@@ -150,18 +145,18 @@ for method in method_list.loc[0,:]:
      plot_precision_recall_vs_threshold(precision, recall, threshold)
      plt.show()
      index=index+1
-     
+#%%  Visualize the points       
 #select best method        
 #clf = svm.SVC(C=2,probability=True)
-clfbuy = Xgb(reg_lambda=1.2)
+clfbuy =GaussianNB(var_smoothing=2) 
+#clfbuy =Xgb(reg_lambda=1.2,max_depth=100)
 clfbuy.fit(xtrain, ytrain)
 predicted = clfbuy.predict_proba(xtest)    
 
-#Visualize the buying point
 dfplot=pd.DataFrame()
 dfplot.loc[:,'Close']=df[3000:]['Close']
 dfplot.loc[:,'GoodProb']=predicted[:,1]
-for threshold in np.arange(0.62,0.73,0.02):
+for threshold in np.arange(0.58,0.6,0.01):
     dfplot['Good']=0
     dfplot.loc[(dfplot['GoodProb']>threshold),'Good'] = dfplot['Close']
     x=dfplot.index
