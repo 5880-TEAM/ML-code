@@ -140,28 +140,28 @@ index=0
 for method in method_list.loc[0,:]:
      clf = method
      clf.fit(xtrain, ytrain)
-     predicted = clf.predict_proba(xtest)
-     precision, recall, threshold = precision_recall_curve(ytest, predicted[:,1])
+     buypredicted = clf.predict_proba(xtest)
+     precision, recall, threshold = precision_recall_curve(ytest, buypredicted[:,1])
      plot_precision_recall_vs_threshold(precision, recall, threshold)
      plt.show()
      index=index+1
 #%%  Visualize the points       
 #select best method        
 #clf = svm.SVC(C=2,probability=True)
-clfbuy =GaussianNB(var_smoothing=2) 
+clfbuy =GaussianNB(var_smoothing=1) 
 #clfbuy =Xgb(reg_lambda=1.2,max_depth=100)
 clfbuy.fit(xtrain, ytrain)
-predicted = clfbuy.predict_proba(xtest)    
+buypredicted = clfbuy.predict_proba(xtest)    
 
 dfplot=pd.DataFrame()
 dfplot.loc[:,'Close']=df[3000:]['Close']
-dfplot.loc[:,'GoodProb']=predicted[:,1]
-for threshold in np.arange(0.58,0.6,0.01):
-    dfplot['Good']=0
-    dfplot.loc[(dfplot['GoodProb']>threshold),'Good'] = dfplot['Close']
+dfplot.loc[:,'GoodBuyProb']=buypredicted[:,1]
+for threshold in np.arange(0.6,0.7,0.02):
+    dfplot['Buy']=0
+    dfplot.loc[(dfplot['GoodBuyProb']>threshold),'Buy'] = dfplot['Close']
     x=dfplot.index
     y1=dfplot['Close']
-    y2=dfplot['Good']
+    y2=dfplot['Buy']
     plt.plot(x, y1,'c',label='Price')
     plt.plot(x, y2, 'o', ms=4.5, label='Buying Point')
     plt.ylim([10, 200])
