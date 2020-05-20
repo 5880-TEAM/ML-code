@@ -11,7 +11,6 @@ from sklearn import tree
 from sklearn.naive_bayes import GaussianNB
 from sklearn import linear_model, datasets
 from sklearn import svm
-from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier as Xgb
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn.linear_model import LogisticRegression
@@ -57,22 +56,21 @@ def stochastic_oscillator(ticker_df,cycle=12, M1=4, M2= 3):
     return ticker_df
 #Evenly separeate all days into good Selling points and poor Selling points
 def selljudge(ticker_df,loss=0.0149,cycle=10):
-    ticker_df['Min'] = ticker_df['Close'].rolling(window = cycle).min().shift(-cycle)
     ticker_df['Good Sell Point?'] =0
-    df.loc[(df['Min']<(1-loss)*ticker_df['Close']),'Good Sell Point?'] = 1#& (ticker_df['Min']<*ticker_df['Close'])
+    df.loc[(ticker_df['Close'].rolling(window = cycle).min().shift(-cycle)<(1-loss)*ticker_df['Close']),'Good Sell Point?'] = 1#& (ticker_df['Min']<*ticker_df['Close'])
     return ticker_df
 
 method_name = [{
-                 'Bayese-7':GaussianNB(var_smoothing=1e-07),
-                 'Bayese-6':GaussianNB(var_smoothing=1e-06),
-                 'Bayese-5':GaussianNB(var_smoothing=1e-05),
-                 'Bayese-4':GaussianNB(var_smoothing=1e-04),
-                 'Bayese-3':GaussianNB(var_smoothing=1e-03),
-                #'SVC(C=1)':svm.SVC(probability=True),
-                # 'SVC(C=1.5)':svm.SVC(C=1.5,probability=True),
-                #'SVC(linear, C=1)':svm.SVC(kernel='linear', C=1,probability=True),
-                # 'SVC(linear, C=2)':svm.SVC(kernel='linear',probability=True),
-                 #'SVC(poly, C=2)':svm.SVC(kernel='poly',probability=True),
+                  'Bayese-7':GaussianNB(var_smoothing=1e-07),
+                   'Bayese-6':GaussianNB(var_smoothing=1e-06),
+                   'Bayese-5':GaussianNB(var_smoothing=1e-05),
+                   'Bayese-4':GaussianNB(var_smoothing=1e-04),
+                   'Bayese-3':GaussianNB(var_smoothing=1e-03),
+                'SVC(C=1)':svm.SVC(probability=True),
+                'SVC(C=1.5)':svm.SVC(C=1.5,probability=True),
+                'SVC(linear, C=1)':svm.SVC(kernel='linear', C=1,probability=True),
+                'SVC(linear, C=2)':svm.SVC(kernel='linear',probability=True),
+                 'SVC(poly, C=2)':svm.SVC(kernel='poly',probability=True),
                 'XGBT(λ=0.8)':Xgb(reg_lambda=0.8),
                 'XGBT(λ=1)':Xgb(reg_lambda=1),
                 }]
@@ -95,7 +93,7 @@ for stock in stocklist:
     df['Close_ROC'] = 100*df['Close'].diff(1)/df['Close'].shift(1)   
     stochastic_oscillator(df)
     df['Intersection'] = 0
-    df.loc[(df['K']>df['D']) & (df['K_prev']<df['D_prev']) & (df['D']<=80)  & (df['D_diff']>0),'Intersection'] = 1# Intersections: K go exceeds D   
+    df.loc[(df['K']<df['D']) & (df['K_prev']>df['D_prev']) & (df['D']>20),'Intersection'] = 1# Intersections: K go exceeds D   
     df['# Inter 10-day'] = df['Intersection'].rolling(14).sum()# number of intersections during past 10 days    
     df['Close/MA10']= df['Close']/df['Close'].rolling(10).mean()# df['MA10']= df['Close'].rolling(10) Moving Average of the past 10 days
     df['Close/MA20']= df['Close']/df['Close'].rolling(20).mean()
@@ -109,11 +107,11 @@ for stock in stocklist:
                 'K_ROC','D_ROC','K_diff','D_diff','J_ROC','J_diff','Close/MA10','Close/MA20','Close/MA50',
                 'Close/MA100','Close/MA200',]] 
     ysell=df.loc[:,'Good Sell Point?']
+    
     # split train and test data
-    xtrain=X[:3000]
-    yselltrain=ysell[:3000]
-    xtest=X[3000:]
-    yselltest=ysell[3000:]
+    xtrain,yselltrain=X[:3500],ysell[:3500]
+    xtest,yselltest=X[3500:],ysell[3500:]
+
     Market_Sell_Ratio=sum(df['Good Sell Point?']==1)/len(df['Good Sell Point?'])#Good Selling Point Ratio in market is manully set to nearly 0.5 
     ResultTable=ResultTable.append({'Stock':stock,'Method':'Market Good Selling Ratio','AvgScores':Market_Sell_Ratio,'StdScores':0},ignore_index=True)
     #Compare and Plot the precision rate of each algorithm        
@@ -144,28 +142,51 @@ for method in method_list.loc[0,:]:
      plot_precision_recall_vs_threshold(precision, recall, threshold)
      plt.show()
      index=index+1
+
 #%%  Visualize the points       
-#select best method        
-#clfsell = svm.SVC(C=2,probability=True)
-#clfsell =GaussianNB(var_smoothing=1e-04) 
+#clfsell = svm.SVC(C=1,probability=True)
 clfsell =Xgb(reg_lambda=0.8)
 clfsell.fit(xtrain, yselltrain)
 sellpredicted = clfsell.predict_proba(xtest)    
-
 dfplot=pd.DataFrame()
-dfplot.loc[:,'Close']=df[3000:]['Close']
+dfplot.loc[:,'Close']=df[3500:]['Close']
 dfplot.loc[:,'GoodSellProb']=sellpredicted[:,1]
 for threshold in np.arange(0.85,0.9,0.01):
-    dfplot["Sell"]=0
-    dfplot.loc[(dfplot['GoodSellProb']>threshold),"Sell"] = dfplot['Close']
+    dfplot['Sell']=0
+    dfplot['SellPrice']=0
+    dfplot.loc[(dfplot['GoodSellProb']>threshold),'Sell'] = 1
+    dfplot.loc[(dfplot['Sell']==1),'SellPrice'] = dfplot['Close']
+    Sellratio=round(100*dfplot['Sell'].sum()/len(dfplot['Sell']),2)
     x=dfplot.index
     y1=dfplot['Close']
-    y2=dfplot["Sell"]
+    y2=dfplot['SellPrice']
     plt.plot(x, y1,'c',label='Price')
-    plt.plot(x, y2, 'o', ms=4.5, c='blue', label='Selling Point')
-    plt.ylim([10, 200])
-    plt.title(stock+'\nThreshold='+str(round(threshold,3)))
+    plt.plot(x, y2, 'o', ms=4.5, label='Sell Point',color='blue')
+    plt.ylim([50, 200])
+    plt.title(stock+'\nXGBoost(λ=0.8)\nThreshold='+str(round(threshold,3)))
+    plt.figtext(0.35,0.3,'Sell Ratio='+str(Sellratio)+'%' , fontsize=13)
     plt.legend(loc='upper left')
     plt.show()
-#dfplot.to_csv('plot.csv')
-
+#%%  Visualize the points       
+clfsell =Xgb(reg_lambda=0.6)
+clfsell.fit(xtrain, yselltrain)
+sellpredicted = clfsell.predict_proba(xtest)    
+dfplot=pd.DataFrame()
+dfplot.loc[:,'Close']=df[3500:]['Close']
+dfplot.loc[:,'GoodSellProb']=sellpredicted[:,1]
+for threshold in np.arange(0.8,0.93,0.03):
+    dfplot['Sell']=0
+    dfplot['SellPrice']=0
+    dfplot.loc[(dfplot['GoodSellProb']>threshold),'Sell'] = 1
+    dfplot.loc[(dfplot['Sell']==1),'SellPrice'] = dfplot['Close']
+    Sellratio=round(100*dfplot['Sell'].sum()/len(dfplot['Sell']),2)
+    x=dfplot.index
+    y1=dfplot['Close']
+    y2=dfplot['SellPrice']
+    plt.plot(x, y1,'c',label='Price')
+    plt.plot(x, y2, 'o', ms=4.5, label='Sell Point',color='blue')
+    plt.ylim([10, 200])
+    plt.title(stock+'\nXGBoost(λ=0.6)\nThreshold='+str(round(threshold,3)))
+    plt.figtext(0.35,0.3,'Sell Ratio='+str(Sellratio)+'%' , fontsize=13)
+    plt.legend(loc='upper left')
+    plt.show()
